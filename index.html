@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Отчетность Дизайна</title>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; padding: 20px; }
+        .container { max-width: 400px; margin: auto; }
+        input, select, button { width: 100%; padding: 10px; margin: 5px 0; }
+        table { width: 100%; margin-top: 20px; border-collapse: collapse; }
+        th, td { border: 1px solid #ddd; padding: 8px; }
+        th { background-color: #f4f4f4; }
+    </style>
+</head>
+<body>
+    <h2>Форма заполнения</h2>
+    <div class="container">
+        <select id="designer"></select>
+        <input type="number" id="ordered" placeholder="Кол-во заказчиков">
+        <input type="number" id="created" placeholder="Креативов сделано">
+        <input type="number" id="tasksDone" placeholder="Тасков сделано">
+        <input type="number" id="tasksMissed" placeholder="Тасков не сделано">
+        <button onclick="submitData()">Отправить</button>
+    </div>
+    
+    <h2>Отчет</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Дизайнер</th>
+                <th>Креативов</th>
+                <th>Тасков</th>
+            </tr>
+        </thead>
+        <tbody id="report"></tbody>
+    </table>
+
+    <script>
+        // Вставьте сюда URL из Google Apps Script ▼
+        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyuDMMv8hGt7KoPV7tgF3PBX9e4D6vjzSFmsp1F02INadGkqSk0eXTnh1RVg7LsY1L9/exec";
+
+        function loadDesigners() {
+            fetch(SCRIPT_URL + "?getDesigners")
+                .then(response => response.json())
+                .then(data => {
+                    let designerSelect = document.getElementById("designer");
+                    designerSelect.innerHTML = "";
+                    data.forEach(name => {
+                        let option = document.createElement("option");
+                        option.value = name;
+                        option.textContent = name;
+                        designerSelect.appendChild(option);
+                    });
+                })
+                .catch(error => console.error("Ошибка загрузки дизайнеров:", error));
+        }
+
+        function submitData() {
+            const data = {
+                designer: document.getElementById("designer").value,
+                ordered: parseInt(document.getElementById("ordered").value) || 0,
+                created: parseInt(document.getElementById("created").value) || 0,
+                tasksDone: parseInt(document.getElementById("tasksDone").value) || 0,
+                tasksMissed: parseInt(document.getElementById("tasksMissed").value) || 0
+            };
+
+            // Отправка данных с заголовками (пункт 4)
+            fetch(SCRIPT_URL, {
+                method: "POST",
+                body: JSON.stringify(data),
+                headers: { 
+                    "Content-Type": "application/json" 
+                }
+            })
+            .then(response => response.text())
+            .then(() => {
+                alert("Данные отправлены!");
+                loadReport();
+            })
+            .catch(error => alert("Ошибка: " + error));
+        }
+
+        function loadReport() {
+            fetch(SCRIPT_URL + "?getReport")
+                .then(response => response.json())
+                .then(data => {
+                    let tableBody = document.getElementById("report");
+                    tableBody.innerHTML = "";
+                    for (let designer in data) {
+                        let row = `<tr>
+                            <td>${designer}</td>
+                            <td>${data[designer].created}</td>
+                            <td>${data[designer].tasks}</td>
+                        </tr>`;
+                        tableBody.innerHTML += row;
+                    }
+                })
+                .catch(error => console.error("Ошибка загрузки отчета:", error));
+        }
+
+        // Загружаем данные при открытии страницы
+        loadDesigners();
+        loadReport();
+    </script>
+</body>
+</html>
